@@ -1,4 +1,4 @@
-# Legal Assistant India
+# Legal-Ease
 
 A mobile application that provides step-by-step legal guidance using Google Gemini AI, specifically tailored for Indian law. Users can ask legal questions in English or Hindi and receive AI-generated guidance.
 
