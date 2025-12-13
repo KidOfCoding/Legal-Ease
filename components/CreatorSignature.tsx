@@ -43,6 +43,7 @@ export const CreatorSignature = () => {
     useEffect(() => {
         const fetchProfile = async () => {
             const finalUrl = getDirectUrl(PROFILE_JSON_URL);
+            console.log('Fetching profile from:', finalUrl);
 
             if (!finalUrl) {
                 console.log('Profile URL not configured.');
@@ -51,10 +52,15 @@ export const CreatorSignature = () => {
 
             try {
                 // Add timestamp to bypass cache
-                // Note: CORS might block this on Web, but it should work on Mobile (APK)
-                const response = await fetch(`${finalUrl}&t=${Date.now()}`);
+                const urlWithTimestamp = `${finalUrl}&t=${Date.now()}`;
+                const response = await fetch(urlWithTimestamp);
+
+                console.log('Profile Fetch Status:', response.status);
+
                 if (response.ok) {
                     const data = await response.json();
+                    console.log('Profile Data Received:', data);
+
                     if (data) {
                         setProfile((prev) => ({
                             name: data.name || prev.name,
@@ -63,9 +69,14 @@ export const CreatorSignature = () => {
                             shown: data.shown !== undefined ? data.shown : prev.shown,
                         }));
                     }
+                } else {
+                    console.log('Profile Fetch Failed:', await response.text());
                 }
-            } catch (error) {
-                console.log('Failed to fetch developer profile:', error);
+            } catch (error: any) {
+                console.log('Detailed Fetch Error:', error);
+                if (error.message?.includes('Network request failed')) {
+                    console.log('If you are on Web, this is likely a CORS issue (Google Drive blocks browsers). It should work on the Mobile App.');
+                }
             }
         };
 
