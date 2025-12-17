@@ -45,7 +45,7 @@ export default async function handler(req: any, res: any) {
         await connectToDatabase();
 
         // Check User Limits
-        let user = await User.findOne({ firebaseUid: userId });
+        let user = await User.findOne({ firebaseUid: userId } as any);
 
         if (!user) {
             user = await User.create({ firebaseUid: userId, email });
