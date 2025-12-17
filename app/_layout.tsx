@@ -45,10 +45,14 @@ function RootLayoutNav() {
   );
 }
 
+import { HistoryProvider } from '../contexts/HistoryContext';
+
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <RootLayoutNav />
+      <HistoryProvider>
+        <RootLayoutNav />
+      </HistoryProvider>
     </AuthProvider>
   );
 }

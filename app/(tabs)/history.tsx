@@ -23,56 +23,20 @@ interface HistoryItem {
   created_at: string;
 }
 
-import { getBaseUrl } from '../../lib/api';
-import { useAuth } from '../../contexts/AuthContext';
+import { useHistory } from '../../contexts/HistoryContext';
 
 export default function HistoryScreen() {
-  const { user } = useAuth();
-  const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { history, loading, refreshHistory } = useHistory();
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchHistory = async () => {
-    if (!user) return; // Should be handled by layout, but safe check
-
-    try {
-      const baseUrl = getBaseUrl();
-      const apiUrl = `${baseUrl}/api/history?userId=${user.uid}`;
-
-      const response = await fetch(apiUrl, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch history');
-      }
-
-      setHistory(data.history || []);
-      setError('');
-    } catch (err: any) {
-      setError(err.message || 'Failed to load history');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    if (user) {
-      fetchHistory();
-    }
-  }, [user]);
-
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    fetchHistory();
+    await refreshHistory();
+    setRefreshing(false);
   };
+
+  // Removed local fetchHistory and useEffect as it's handled in Context
+
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);

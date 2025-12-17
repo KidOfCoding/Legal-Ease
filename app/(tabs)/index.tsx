@@ -19,9 +19,11 @@ import Markdown from 'react-native-markdown-display';
 import { getBaseUrl } from '../../lib/api';
 import { CreatorSignature } from '../../components/CreatorSignature';
 import { useAuth } from '../../contexts/AuthContext';
+import { useHistory } from '../../contexts/HistoryContext';
 
 export default function HomeScreen() {
   const { user } = useAuth();
+  const { refreshHistory } = useHistory();
   const [question, setQuestion] = useState('');
   const [language, setLanguage] = useState('english');
   const [answer, setAnswer] = useState('');
