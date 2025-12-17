@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import mongoose from 'mongoose';
 import { v2 as cloudinary } from 'cloudinary';
 import connectToDatabase from '../lib/db';
+import User from '../lib/models/User';
 
 // Configure Cloudinary
 cloudinary.config({
@@ -44,7 +45,6 @@ export default async function handler(req: any, res: any) {
         await connectToDatabase();
 
         // Check User Limits
-        const User = (await import('../lib/models/User.js')).default;
         let user = await User.findOne({ firebaseUid: userId });
 
         if (!user) {

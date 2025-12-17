@@ -29,12 +29,14 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "e1649950-3f7b-44fb-b6f8-719098d06315"
+        "projectId": "12b70542-320c-4863-ace9-38e1b78480ba"
       }
     },
-    "owner": "dannycharlees-organization",
     "android": {
-      "package": "com.dannycharleesorganization.legalease"
+      "package": "com.dannycharleesorganization.legalease",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     }
   }
 }
