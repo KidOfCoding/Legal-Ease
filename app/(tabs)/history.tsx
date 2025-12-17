@@ -24,17 +24,21 @@ interface HistoryItem {
 }
 
 import { getBaseUrl } from '../../lib/api';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function HistoryScreen() {
+  const { user } = useAuth();
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchHistory = async () => {
+    if (!user) return; // Should be handled by layout, but safe check
+
     try {
       const baseUrl = getBaseUrl();
-      const apiUrl = `${baseUrl}/api/history`;
+      const apiUrl = `${baseUrl}/api/history?userId=${user.uid}`;
 
       const response = await fetch(apiUrl, {
         method: 'GET',
@@ -60,8 +64,10 @@ export default function HistoryScreen() {
   };
 
   useEffect(() => {
-    fetchHistory();
-  }, []);
+    if (user) {
+      fetchHistory();
+    }
+  }, [user]);
 
   const onRefresh = () => {
     setRefreshing(true);

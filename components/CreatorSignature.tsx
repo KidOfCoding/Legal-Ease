@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, TouchableOpacity, Linking, StyleSheet } from 'react-native';
+import { View, Text, Image, TouchableOpacity, Linking, StyleSheet, Platform } from 'react-native';
 
 // TODO: Paste your Google Drive Share Link here
 // 1. Upload developer-profile.json to Google Drive
@@ -43,6 +43,13 @@ export const CreatorSignature = () => {
     useEffect(() => {
         const fetchProfile = async () => {
             const finalUrl = getDirectUrl(PROFILE_JSON_URL);
+
+            // Google Drive direct links often fail CORS on Web
+            if (Platform.OS === 'web' && finalUrl?.includes('drive.google.com')) {
+                console.log('Skipping Google Drive fetch on Web due to CORS.');
+                return;
+            }
+
             console.log('Fetching profile from:', finalUrl);
 
             if (!finalUrl) {

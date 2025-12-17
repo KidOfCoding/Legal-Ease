@@ -3,6 +3,7 @@ import connectToDatabase from '../lib/db';
 
 // Reuse the schema/model (ensure it matches the one in ask-legal)
 const LegalQASchema = new mongoose.Schema({
+    userId: { type: String, required: true, index: true },
     question: { type: String, required: true },
     answer: { type: String, required: true },
     language: { type: String, required: true },
@@ -19,11 +20,17 @@ export default async function handler(req: any, res: any) {
     }
 
     try {
+        const { userId } = req.query;
+
+        if (!userId) {
+            return res.status(401).json({ error: 'Unauthorized: User ID required' });
+        }
+
         await connectToDatabase();
 
-        const history = await LegalQA.find()
+        const history = await LegalQA.find({ userId })
             .sort({ createdAt: -1 })
-            .limit(5);
+            .limit(10); // Increased limit slightly for better UX
 
         const formattedHistory = history.map((item: any) => ({
             id: item._id.toString(),

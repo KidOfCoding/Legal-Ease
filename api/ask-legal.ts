@@ -12,6 +12,7 @@ cloudinary.config({
 
 // Define Schema
 const LegalQASchema = new mongoose.Schema({
+    userId: { type: String, required: true, index: true }, // Added userId
     question: { type: String, required: true },
     answer: { type: String, required: true },
     language: { type: String, required: true },
@@ -106,6 +107,7 @@ export default async function handler(req: any, res: any) {
 
         // Store in MongoDB
         const newQA = await LegalQA.create({
+            userId, // Save userId
             question: question || 'File Analysis',
             answer,
             language,
@@ -124,6 +126,7 @@ export default async function handler(req: any, res: any) {
             fileUrl,
             attemptsLeft: user.attemptsLeft - 1
         });
+
 
     } catch (error: any) {
         console.error('Error:', error);
