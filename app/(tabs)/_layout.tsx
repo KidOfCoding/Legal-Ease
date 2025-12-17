@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { MessageSquare, History } from 'lucide-react-native';
+import { MessageSquare, History, User as UserIcon } from 'lucide-react-native';
 
 export default function TabLayout() {
   return (
@@ -40,6 +40,17 @@ export default function TabLayout() {
           tabBarLabel: 'History',
           tabBarIcon: ({ size, color }) => (
             <History size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          headerTitle: 'My Profile',
+          tabBarLabel: 'Profile',
+          tabBarIcon: ({ size, color }) => (
+            <UserIcon size={size} color={color} />
           ),
         }}
       />
