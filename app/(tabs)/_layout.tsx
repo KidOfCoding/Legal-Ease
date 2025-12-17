@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { MessageSquare, History, User as UserIcon } from 'lucide-react-native';
+import { HeaderProfileButton } from '../../components/HeaderProfileButton';
 
 export default function TabLayout() {
   return (
@@ -15,6 +16,7 @@ export default function TabLayout() {
         headerTitleStyle: {
           fontWeight: '600',
         },
+        headerRight: () => <HeaderProfileButton />,
         tabBarStyle: {
           backgroundColor: '#fff',
           borderTopWidth: 1,
