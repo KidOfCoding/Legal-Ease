@@ -18,8 +18,10 @@ import Markdown from 'react-native-markdown-display';
 
 import { getBaseUrl } from '../../lib/api';
 import { CreatorSignature } from '../../components/CreatorSignature';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function HomeScreen() {
+  const { user } = useAuth();
   const [question, setQuestion] = useState('');
   const [language, setLanguage] = useState('english');
   const [answer, setAnswer] = useState('');
@@ -114,7 +116,9 @@ export default function HomeScreen() {
           file: selectedFile ? {
             base64: selectedFile.base64,
             mimeType: selectedFile.mimeType,
-          } : undefined
+          } : undefined,
+          userId: user?.uid,
+          email: user?.email
         }),
       });
 
@@ -149,6 +153,12 @@ export default function HomeScreen() {
         <Text style={styles.subtitle}>
           Get step-by-step legal guidance based on Indian law. Upload images or documents for analysis.
         </Text>
+
+        <View style={styles.limitNote}>
+          <Text style={styles.limitNoteText}>
+            ⚠️ Note: Due to high API costs, each user is limited to 3 free queries.
+          </Text>
+        </View>
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Your Question</Text>
@@ -479,5 +489,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#92400e',
     lineHeight: 18,
+  },
+  limitNote: {
+    marginBottom: 20,
+    padding: 12,
+    backgroundColor: '#fff3cd',
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#ffc107',
+  },
+  limitNoteText: {
+    color: '#856404',
+    fontSize: 13,
+    lineHeight: 20,
   },
 });

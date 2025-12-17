@@ -30,13 +30,29 @@ export default async function handler(req: any, res: any) {
 
     try {
         const body = req.body;
-        const { question, language, file } = body;
+        const { question, language, file, userId, email } = body;
 
         if (!question && !file) {
             return res.status(400).json({ error: 'Question or file is required' });
         }
 
+        if (!userId) {
+            return res.status(401).json({ error: 'Unauthorized: User ID required' });
+        }
+
         await connectToDatabase();
+
+        // Check User Limits
+        const User = (await import('../lib/models/User')).default;
+        let user = await User.findOne({ firebaseUid: userId });
+
+        if (!user) {
+            user = await User.create({ firebaseUid: userId, email });
+        }
+
+        if (user.attemptsLeft <= 0) {
+            return res.status(403).json({ error: 'You have used your 3 free attempts.' });
+        }
 
         const geminiApiKey = process.env.GEMINI_API_KEY;
         if (!geminiApiKey) {
@@ -97,12 +113,16 @@ export default async function handler(req: any, res: any) {
             fileType,
         });
 
+        // Decrement Attempts
+        await User.updateOne({ _id: user._id }, { $inc: { attemptsLeft: -1 }, lastLogin: new Date() });
+
         return res.status(200).json({
             answer,
             question: newQA.question,
             language,
             id: newQA._id,
             fileUrl,
+            attemptsLeft: user.attemptsLeft - 1
         });
 
     } catch (error: any) {
