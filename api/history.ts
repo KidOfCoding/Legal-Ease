@@ -28,7 +28,7 @@ export default async function handler(req: any, res: any) {
 
         await connectToDatabase();
 
-        const history = await LegalQA.find({ userId })
+        const history = await LegalQA.find({ userId } as any)
             .sort({ createdAt: -1 })
             .limit(10); // Increased limit slightly for better UX
 

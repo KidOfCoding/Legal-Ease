@@ -44,7 +44,7 @@ export default async function handler(req: any, res: any) {
         await connectToDatabase();
 
         // Check User Limits
-        const User = (await import('../lib/models/User')).default;
+        const User = (await import('../lib/models/User.js')).default;
         let user = await User.findOne({ firebaseUid: userId });
 
         if (!user) {
