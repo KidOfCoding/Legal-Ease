@@ -15,12 +15,14 @@ interface HistoryItem {
 interface HistoryContextType {
     history: HistoryItem[];
     loading: boolean;
+    error: string;
     refreshHistory: () => Promise<void>;
 }
 
 const HistoryContext = createContext<HistoryContextType>({
     history: [],
     loading: false,
+    error: '',
     refreshHistory: async () => { },
 });
 
@@ -30,6 +32,7 @@ export const HistoryProvider = ({ children }: { children: React.ReactNode }) => 
     const { user } = useAuth();
     const [history, setHistory] = useState<HistoryItem[]>([]);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
     const fetchHistory = async () => {
         if (!user) {
@@ -39,6 +42,7 @@ export const HistoryProvider = ({ children }: { children: React.ReactNode }) => 
 
         try {
             setLoading(true);
+            setError('');
             const baseUrl = getBaseUrl();
             const apiUrl = `${baseUrl}/api/history?userId=${user.uid}`;
 
@@ -52,13 +56,16 @@ export const HistoryProvider = ({ children }: { children: React.ReactNode }) => 
             const data = await response.json();
 
             if (!response.ok) {
-                console.error('Failed to fetch history:', data.error);
+                const errorMsg = data.error || 'Failed to fetch history';
+                console.error('Failed to fetch history:', errorMsg);
+                setError(errorMsg);
                 return;
             }
 
             setHistory(data.history || []);
         } catch (err: any) {
             console.error('History fetch error:', err);
+            setError(err.message || 'Failed to load history');
         } finally {
             setLoading(false);
         }
@@ -69,7 +76,7 @@ export const HistoryProvider = ({ children }: { children: React.ReactNode }) => 
     }, [user]);
 
     return (
-        <HistoryContext.Provider value={{ history, loading, refreshHistory: fetchHistory }}>
+        <HistoryContext.Provider value={{ history, loading, error, refreshHistory: fetchHistory }}>
             {children}
         </HistoryContext.Provider>
     );

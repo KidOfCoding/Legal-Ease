@@ -26,7 +26,7 @@ interface HistoryItem {
 import { useHistory } from '../../contexts/HistoryContext';
 
 export default function HistoryScreen() {
-  const { history, loading, refreshHistory } = useHistory();
+  const { history, loading, error, refreshHistory } = useHistory();
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = async () => {
