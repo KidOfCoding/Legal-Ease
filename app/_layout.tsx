@@ -14,11 +14,11 @@ function RootLayoutNav() {
   useEffect(() => {
     if (loading) return;
 
-    const isLoginPage = segments.includes('login');
+    const isLoginPage = (segments as string[]).includes('login');
 
     if (!user && !isLoginPage) {
       // Redirect to login if not authenticated
-      router.replace('/login');
+      router.replace('/login' as any);
     } else if (user && isLoginPage) {
       // Redirect to home if authenticated and on login page
       router.replace('/(tabs)');

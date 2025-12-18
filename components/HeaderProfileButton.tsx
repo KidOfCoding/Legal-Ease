@@ -9,7 +9,7 @@ export const HeaderProfileButton = () => {
     const router = useRouter();
 
     const handlePress = () => {
-        router.push('/profile');
+        router.push('/profile' as any);
     };
 
     return (
