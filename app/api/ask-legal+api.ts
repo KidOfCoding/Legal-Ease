@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import mongoose from 'mongoose';
 import { v2 as cloudinary } from 'cloudinary';
 import connectToDatabase from '../../lib/db';
+import User from '../../lib/models/User';
 
 // Configure Cloudinary
 cloudinary.config({
@@ -26,7 +27,11 @@ const LegalQA = mongoose.models.LegalQA || mongoose.model('LegalQA', LegalQASche
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { question, language, file } = body;
+        const { question, language, file, userId } = body;
+
+        if (!userId) {
+            return Response.json({ error: 'Unauthorized: User ID required' }, { status: 401 });
+        }
 
         if (!question && !file) {
             return Response.json(
@@ -36,6 +41,19 @@ export async function POST(request: Request) {
         }
 
         await connectToDatabase();
+
+        // CHECK ATTEMPTS
+        const user = await User.findOne({ firebaseUid: userId });
+        if (!user) {
+            return Response.json({ error: 'User not found' }, { status: 404 });
+        }
+
+        if (user.attemptsLeft <= 0) {
+            return Response.json(
+                { error: 'Free quota exceeded. You have 0 attempts left.' },
+                { status: 403 }
+            );
+        }
 
         const geminiApiKey = process.env.GEMINI_API_KEY;
         if (!geminiApiKey) {
@@ -88,9 +106,14 @@ export async function POST(request: Request) {
             }
         }
 
+        // Generate Content
         const result = await model.generateContent(parts);
         const response = await result.response;
         const answer = response.text();
+
+        // DECREMENT ATTEMPTS
+        user.attemptsLeft = Math.max(0, user.attemptsLeft - 1);
+        await user.save();
 
         // Store in MongoDB
         const newQA = await LegalQA.create({
@@ -107,6 +130,7 @@ export async function POST(request: Request) {
             language,
             id: newQA._id,
             fileUrl,
+            attemptsLeft: user.attemptsLeft // Return updated count
         });
 
     } catch (error: any) {

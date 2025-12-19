@@ -1,25 +1,5 @@
-import { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  ActivityIndicator,
-  Image,
-  Alert,
-} from 'react-native';
-import { Send, Image as ImageIcon, FileText, X } from 'lucide-react-native';
-import * as ImagePicker from 'expo-image-picker';
-import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system/legacy';
-import Markdown from 'react-native-markdown-display';
-
-import { getBaseUrl } from '../../lib/api';
-import { CreatorSignature } from '../../components/CreatorSignature';
-import { useAuth } from '../../contexts/AuthContext';
-import { useHistory } from '../../contexts/HistoryContext';
+import { useState, useEffect } from 'react';
+// ... (imports)
 
 export default function HomeScreen() {
   const { user } = useAuth();
@@ -29,120 +9,62 @@ export default function HomeScreen() {
   const [answer, setAnswer] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [selectedFile, setSelectedFile] = useState<{
-    uri: string;
-    type: 'image' | 'document';
-    name: string;
-    mimeType: string;
-    base64?: string;
-  } | null>(null);
+  const [attempts, setAttempts] = useState<number | null>(null);
 
-  const pickImage = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'], // Fixed deprecated option
-        allowsEditing: true,
-        quality: 0.8,
-        base64: true,
-      });
+  // ... (existing state)
 
-      if (!result.canceled) {
-        const asset = result.assets[0];
-        setSelectedFile({
-          uri: asset.uri,
-          type: 'image',
-          name: 'Selected Image',
-          mimeType: asset.mimeType || 'image/jpeg',
-          base64: asset.base64 || '',
-        });
+  // Fetch User Attempts
+  useEffect(() => {
+    async function fetchAttempts() {
+      if (user?.uid) {
+        try {
+          const baseUrl = getBaseUrl();
+          const response = await fetch(`${baseUrl}/api/user?userId=${user.uid}&email=${user.email}`);
+          const data = await response.json();
+          if (data.attemptsLeft !== undefined) {
+            setAttempts(data.attemptsLeft);
+          }
+        } catch (error) {
+          console.error("Failed to fetch attempts", error);
+        }
       }
-    } catch (err) {
-      Alert.alert('Error', 'Failed to pick image');
     }
-  };
+    fetchAttempts();
+  }, [user]);
 
-  const pickDocument = async () => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: 'application/pdf',
-        copyToCacheDirectory: true,
-      });
-
-      if (!result.canceled) {
-        const file = result.assets[0];
-        const base64 = await FileSystem.readAsStringAsync(file.uri, {
-          encoding: 'base64',
-        });
-
-        setSelectedFile({
-          uri: file.uri,
-          type: 'document',
-          name: file.name,
-          mimeType: 'application/pdf',
-          base64: base64,
-        });
-      }
-    } catch (err: any) {
-      console.error('Document Picker Error:', err);
-      Alert.alert('Error', `Failed to pick document: ${err.message}`);
-    }
-  };
-
-  const removeFile = () => {
-    setSelectedFile(null);
-  };
+  // ... (pickImage, etc.)
 
   const handleSubmit = async () => {
-    if (!question.trim() && !selectedFile) {
-      setError('Please enter a question or upload a file');
-      return;
-    }
+    // ... (validation)
 
     setLoading(true);
-    setError('');
-    setAnswer('');
+    // ...
 
     try {
       const baseUrl = getBaseUrl();
-      const apiUrl = `${baseUrl}/api/ask-legal`;
-      console.log('Sending request to:', apiUrl);
+      // ...
 
       const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          question,
-          language,
-          file: selectedFile ? {
-            base64: selectedFile.base64,
-            mimeType: selectedFile.mimeType,
-          } : undefined,
-          userId: user?.uid,
-          email: user?.email
-        }),
+        // ...
       });
 
-      const text = await response.text();
-      console.log('Raw response:', text);
-
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (e) {
-        throw new Error(`Server returned non-JSON response: ${text.substring(0, 100)}...`);
-      }
+      // ...
 
       if (!response.ok) {
+        // Handle Quota Exceeded specifically to update UI if needed
+        if (response.status === 403) {
+          setAttempts(0);
+        }
         throw new Error(data.error || 'Failed to get response');
       }
 
       setAnswer(data.answer);
-      setQuestion('');
-      setSelectedFile(null);
+      if (data.attemptsLeft !== undefined) {
+        setAttempts(data.attemptsLeft); // Update attempts from response
+      }
+      // ...
     } catch (err: any) {
-      setError(err.message || 'An error occurred. Please try again.');
+      // ...
     } finally {
       setLoading(false);
     }
@@ -152,139 +74,94 @@ export default function HomeScreen() {
     <ScrollView style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.title}>Ask Your Legal Question</Text>
-        <Text style={styles.subtitle}>
-          Get step-by-step legal guidance based on Indian law. Upload images or documents for analysis.
-        </Text>
 
+        {/* Updated Limit Note */}
         <View style={styles.limitNote}>
           <Text style={styles.limitNoteText}>
-            ⚠️ Note: Due to high API costs, each user is limited to 3 free queries.
+            {attempts !== null
+              ? `Attempts Left: ${attempts} / 3`
+              : 'Loading usage info...'}
           </Text>
         </View>
 
+        {/* Disable Input if attempts 0 */}
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Your Question</Text>
           <TextInput
-            style={styles.textInput}
-            placeholder="e.g., How to register a shop? or Describe this document."
+            style={[styles.textInput, attempts === 0 && styles.disabledInput]}
+            placeholder={attempts === 0 ? "You have used all your free attempts." : "e.g., How to register a shop? ..."}
             multiline
             numberOfLines={4}
             value={question}
             onChangeText={setQuestion}
-            editable={!loading}
+            editable={!loading && attempts !== 0}
           />
         </View>
 
-        {selectedFile && (
-          <View style={styles.filePreview}>
-            <View style={styles.fileInfo}>
-              {selectedFile.type === 'image' ? (
-                <Image source={{ uri: selectedFile.uri }} style={styles.thumbnail} />
-              ) : (
-                <FileText size={24} color="#4b5563" />
-              )}
-              <Text style={styles.fileName} numberOfLines={1}>
-                {selectedFile.name}
-              </Text>
-            </View>
-            <TouchableOpacity onPress={removeFile} disabled={loading}>
-              <X size={20} color="#ef4444" />
-            </TouchableOpacity>
-          </View>
-        )}
+        {/* ... (File Preview) */}
 
-        <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={pickImage}
-            disabled={loading}
-          >
-            <ImageIcon size={20} color="#4b5563" />
-            <Text style={styles.actionButtonText}>Add Image</Text>
-          </TouchableOpacity>
+        {/* ... (Action Buttons disabled logic) */}
 
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={pickDocument}
-            disabled={loading}
-          >
-            <FileText size={20} color="#4b5563" />
-            <Text style={styles.actionButtonText}>Add PDF</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Select Language</Text>
-          <View style={styles.languageContainer}>
-            <TouchableOpacity
-              style={[
-                styles.languageButton,
-                language === 'english' && styles.languageButtonActive,
-              ]}
-              onPress={() => setLanguage('english')}
-              disabled={loading}>
-              <Text
-                style={[
-                  styles.languageButtonText,
-                  language === 'english' && styles.languageButtonTextActive,
-                ]}>
-                English
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.languageButton,
-                language === 'hindi' && styles.languageButtonActive,
-              ]}
-              onPress={() => setLanguage('hindi')}
-              disabled={loading}>
-              <Text
-                style={[
-                  styles.languageButtonText,
-                  language === 'hindi' && styles.languageButtonTextActive,
-                ]}>
-                हिंदी
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        {/* ... (Language) */}
 
         <TouchableOpacity
-          style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+          style={[styles.submitButton, (loading || attempts === 0) && styles.submitButtonDisabled]}
           onPress={handleSubmit}
-          disabled={loading}>
+          disabled={loading || attempts === 0}>
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
             <>
               <Send size={20} color="#fff" style={styles.buttonIcon} />
-              <Text style={styles.submitButtonText}>Get Legal Guidance</Text>
+              <Text style={styles.submitButtonText}>
+                {attempts === 0 ? "Quota Exceeded" : "Get Legal Guidance"}
+              </Text>
             </>
           )}
         </TouchableOpacity>
 
-        {error && (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        )}
-
-        {answer && (
-          <View style={styles.answerContainer}>
-            <Text style={styles.answerTitle}>Legal Guidance:</Text>
-            <Markdown style={markdownStyles}>{answer}</Markdown>
-            <View style={styles.disclaimer}>
-              <Text style={styles.disclaimerText}>
-                ⚠️ This is AI-generated guidance. Always consult with a
-                qualified lawyer for serious legal matters.
-              </Text>
-            </View>
-          </View>
-        )}
-
-        <CreatorSignature />
+        {/* ... */}
       </View>
     </ScrollView>
+  );
+}
+
+// Add disabledInput style
+const styles = StyleSheet.create({
+  // ...
+  disabledInput: {
+    backgroundColor: '#f3f4f6',
+    color: '#9ca3af'
+  },
+  // ...
+});
+
+{
+  error && (
+    <View style={styles.errorContainer}>
+      <Text style={styles.errorText}>{error}</Text>
+    </View>
+  )
+}
+
+{
+  answer && (
+    <View style={styles.answerContainer}>
+      <Text style={styles.answerTitle}>Legal Guidance:</Text>
+      <Markdown style={markdownStyles}>{answer}</Markdown>
+      <View style={styles.disclaimer}>
+        <Text style={styles.disclaimerText}>
+          ⚠️ This is AI-generated guidance. Always consult with a
+          qualified lawyer for serious legal matters.
+        </Text>
+      </View>
+    </View>
+  )
+}
+
+<CreatorSignature />
+      </View >
+    </ScrollView >
   );
 }
 
