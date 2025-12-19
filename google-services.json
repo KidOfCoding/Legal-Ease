@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "147479660562",
+    "project_id": "drivesync-757cf",
+    "storage_bucket": "drivesync-757cf.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:147479660562:android:6bf2d110e9cf0ac322f0cb",
+        "android_client_info": {
+          "package_name": "com.dannycharleesorganization.legalease"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "147479660562-h8vg8dd9utcjv36oddq1asi5cjuac9sp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAM5_gdJOt0n4pKTeHEJR9sy-eRhYmLjPs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "147479660562-h8vg8dd9utcjv36oddq1asi5cjuac9sp.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
