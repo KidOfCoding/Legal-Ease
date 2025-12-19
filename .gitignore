@@ -36,5 +36,4 @@ yarn-error.*
 
 # secrets
 credentials.json
-google-services.json
 GoogleService-Info.plist
