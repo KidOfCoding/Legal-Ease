@@ -9,11 +9,7 @@ import {
     signOut,
     signInWithCredential
 } from 'firebase/auth';
-import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
-
-// Complete the auth session if coming back from a browser redirect
-WebBrowser.maybeCompleteAuthSession();
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 interface AuthContextType {
     user: User | null;
@@ -30,12 +26,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
-    // Setup native Google Sign-In request
-    const [request, response, promptAsync] = Google.useAuthRequest({
-        androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
-        iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-    });
+    useEffect(() => {
+        // Configure Google Sign-In
+        if (Platform.OS !== 'web') {
+            GoogleSignin.configure({
+                // The WEB CLIENT ID is required to get the idToken for Firebase
+                webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+                offlineAccess: true,
+            });
+        }
+    }, []);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user: User | null) => {
@@ -45,42 +45,46 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return unsubscribe;
     }, []);
 
-    // Handle Native Sign-In Response
-    useEffect(() => {
-        if (response?.type === 'success') {
-            const { id_token } = response.params;
-            const credential = GoogleAuthProvider.credential(id_token);
-            signInWithCredential(auth, credential).catch((error) => {
-                console.error("Native Sign-In Error:", error);
-            });
-        } else if (response?.type === 'error') {
-            console.error("Native Sign-In Request Error:", response.error);
-        }
-    }, [response]);
-
     const signInWithGoogle = async () => {
-        if (Platform.OS === 'web') {
-            // Web: Use Popup (Original Method)
-            const provider = new GoogleAuthProvider();
-            try {
+        try {
+            if (Platform.OS === 'web') {
+                const provider = new GoogleAuthProvider();
                 await signInWithPopup(auth, provider);
-            } catch (error) {
-                console.error("Web Login failed", error);
-                throw error;
+            } else {
+                // Native: Google Play Services Flow
+                await GoogleSignin.hasPlayServices();
+                const userInfo = await GoogleSignin.signIn();
+
+                // Get the ID token
+                const { idToken } = await GoogleSignin.getTokens();
+
+                if (!idToken) {
+                    throw new Error('No ID token found');
+                }
+
+                // Create a Firebase credential with the token
+                const googleCredential = GoogleAuthProvider.credential(idToken);
+
+                // Sign-in the user with the credential
+                await signInWithCredential(auth, googleCredential);
             }
-        } else {
-            // Native: Use Expo Auth Session
-            try {
-                await promptAsync();
-            } catch (error) {
-                console.error("Native Login initiation failed", error);
-                throw error;
-            }
+        } catch (error: any) {
+            console.error("Google Sign-In Error:", error);
+            // Handle specific error codes if needed
+            // if (error.code === statusCodes.SIGN_IN_CANCELLED) { ... }
+            throw error;
         }
     };
 
     const logout = async () => {
-        await signOut(auth);
+        try {
+            await signOut(auth);
+            if (Platform.OS !== 'web') {
+                await GoogleSignin.signOut();
+            }
+        } catch (error) {
+            console.error("Logout Error:", error);
+        }
     };
 
     return (
